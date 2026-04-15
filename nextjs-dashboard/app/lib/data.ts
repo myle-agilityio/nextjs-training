@@ -14,11 +14,12 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 export async function fetchRevenue() {
   await new Promise((resolve) => setTimeout(resolve, 2000));
+  console.log('Data fetch completed after 2 seconds.');
   return revenue;
 }
 
 export async function fetchLatestInvoices() {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  // await new Promise((resolve) => setTimeout(resolve, 2000));
   // Simulate the database query using placeholder data
   // const data = await sql<LatestInvoiceRaw[]>`
   //     SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
@@ -63,11 +64,11 @@ export async function fetchCardData() {
     // FROM invoices`;
 
   const invoiceCountPromise = new Promise<number>((resolve) =>
-    setTimeout(() => resolve(invoices.length), 2000),
+    setTimeout(() => resolve(invoices.length), 0),
   );
 
   const customerCountPromise = new Promise<number>((resolve) =>
-    setTimeout(() => resolve(customers.length), 2000),
+    setTimeout(() => resolve(customers.length), 0),
   );
 
   const totalPaidPromise = new Promise<number>((resolve) =>
@@ -78,7 +79,7 @@ export async function fetchCardData() {
             .filter((invoice) => invoice.status === 'paid')
             .reduce((sum, invoice) => sum + invoice.amount, 0),
         ),
-      2000,
+      0,
     ),
   );
 
