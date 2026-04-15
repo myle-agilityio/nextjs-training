@@ -4,8 +4,6 @@ import {
   CustomersTableType,
   InvoiceForm,
   InvoicesTable,
-  LatestInvoiceRaw,
-  Revenue,
 } from './definitions';
 import { formatCurrency } from './utils';
 import { customers, invoices, revenue } from './placeholder-data';
@@ -14,7 +12,6 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 export async function fetchRevenue() {
   await new Promise((resolve) => setTimeout(resolve, 2000));
-  console.log('Data fetch completed after 2 seconds.');
   return revenue;
 }
 
@@ -64,11 +61,11 @@ export async function fetchCardData() {
     // FROM invoices`;
 
   const invoiceCountPromise = new Promise<number>((resolve) =>
-    setTimeout(() => resolve(invoices.length), 0),
+    setTimeout(() => resolve(invoices.length), 1000),
   );
 
   const customerCountPromise = new Promise<number>((resolve) =>
-    setTimeout(() => resolve(customers.length), 0),
+    setTimeout(() => resolve(customers.length), 1000),
   );
 
   const totalPaidPromise = new Promise<number>((resolve) =>
@@ -79,7 +76,7 @@ export async function fetchCardData() {
             .filter((invoice) => invoice.status === 'paid')
             .reduce((sum, invoice) => sum + invoice.amount, 0),
         ),
-      0,
+      1000,
     ),
   );
 
