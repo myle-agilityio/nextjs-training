@@ -180,46 +180,24 @@ export async function fetchInvoicesPages(query: string) {
   return totalPages;
 }
 
-export async function fetchInvoiceById(id: string) {
-  try {
-    const data = await sql<InvoiceForm[]>`
-      SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
-    `;
+export function fetchInvoiceById(id: string): InvoiceForm {
+  const invoice = invoices.find((invoice) => invoice.id === id);
+  if (!invoice) throw new Error('Invoice not found');
 
-    const invoice = data.map((invoice) => ({
-      ...invoice,
-      // Convert amount from cents to dollars
-      amount: invoice.amount / 100,
-    }));
-
-    return invoice[0];
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoice.');
-  }
+  return {
+    id: invoice.id,
+    customer_id: invoice.customer_id,
+    status: invoice.status === 'paid' ? 'paid' : 'pending',
+    // Convert amount from cents to dollars
+    amount: invoice.amount / 100,
+  };
 }
 
 export async function fetchCustomers() {
-  try {
-    const customers = await sql<CustomerField[]>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
-
-    return customers;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch all customers.');
-  }
+  return customers.map((customer) => ({
+    id: customer.id,
+    name: customer.name,
+  })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function fetchFilteredCustomers(query: string) {
