@@ -7,6 +7,7 @@ import {
 } from './definitions';
 import { formatCurrency } from './utils';
 import { customers, invoices, revenue } from './placeholder-data';
+import { notFound } from 'next/navigation';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -182,7 +183,7 @@ export async function fetchInvoicesPages(query: string) {
 
 export function fetchInvoiceById(id: string): InvoiceForm {
   const invoice = invoices.find((invoice) => invoice.id === id);
-  if (!invoice) throw new Error('Invoice not found');
+  if (!invoice) notFound();
 
   return {
     id: invoice.id,
