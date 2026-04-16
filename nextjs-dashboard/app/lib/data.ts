@@ -108,54 +108,76 @@ export async function fetchFilteredInvoices(
 ) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  try {
-    const invoices = await sql<InvoicesTable[]>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
+    // const invoices = await sql<InvoicesTable[]>`
+    //   SELECT
+    //     invoices.id,
+    //     invoices.amount,
+    //     invoices.date,
+    //     invoices.status,
+    //     customers.name,
+    //     customers.email,
+    //     customers.image_url
+    //   FROM invoices
+    //   JOIN customers ON invoices.customer_id = customers.id
+    //   WHERE
+    //     customers.name ILIKE ${`%${query}%`} OR
+    //     customers.email ILIKE ${`%${query}%`} OR
+    //     invoices.amount::text ILIKE ${`%${query}%`} OR
+    //     invoices.date::text ILIKE ${`%${query}%`} OR
+    //     invoices.status ILIKE ${`%${query}%`}
+    //   ORDER BY invoices.date DESC
+    //   LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    // `;
 
-    return invoices;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoices.');
-  }
+  const searchTerm = query.toLowerCase();
+
+  const filteredInvoices = invoices
+    .map((invoice) => {
+      const customer = customers.find((c) => c.id === invoice.customer_id);
+      if (!customer) return null;
+      return {
+        id: invoice.id,
+        amount: invoice.amount,
+        date: invoice.date,
+        status: invoice.status,
+        name: customer.name,
+        email: customer.email,
+        image_url: customer.image_url,
+      };
+    })
+    .filter((invoice): invoice is NonNullable<typeof invoice> => invoice !== null)
+    .filter(
+      (invoice) =>
+        invoice.name.toLowerCase().includes(searchTerm) ||
+        invoice.email.toLowerCase().includes(searchTerm) ||
+        String(invoice.amount).includes(searchTerm) ||
+        invoice.date.includes(searchTerm) ||
+        invoice.status.includes(searchTerm),
+    )
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(offset, offset + ITEMS_PER_PAGE);
+
+  return filteredInvoices;
 }
 
 export async function fetchInvoicesPages(query: string) {
-  try {
-    const data = await sql`SELECT COUNT(*)
-    FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
-    WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
-      invoices.amount::text ILIKE ${`%${query}%`} OR
-      invoices.date::text ILIKE ${`%${query}%`} OR
-      invoices.status ILIKE ${`%${query}%`}
-  `;
+  const searchTerm = query.toLowerCase();
+  
+  const filteredInvoices = invoices.filter((invoice) => {
+    const customer = customers.find((c) => c.id === invoice.customer_id);
+    if (!customer) return false;
 
-    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
-    return totalPages;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch total number of invoices.');
-  }
+    return (
+      customer.name.toLowerCase().includes(searchTerm) ||
+      customer.email.toLowerCase().includes(searchTerm) ||
+      String(invoice.amount).includes(searchTerm) ||
+      invoice.date.includes(searchTerm) ||
+      invoice.status.includes(searchTerm)
+    );
+  });
+
+  const totalPages = Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE);
+  return totalPages;
 }
 
 export async function fetchInvoiceById(id: string) {
